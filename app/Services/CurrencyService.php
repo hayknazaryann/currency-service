@@ -13,6 +13,7 @@ class CurrencyService
 {
     /**
      * @param RequestService $requestService
+     * @param CurrencyInterface $currencyRepository
      */
     public function __construct(
         protected RequestService $requestService,
