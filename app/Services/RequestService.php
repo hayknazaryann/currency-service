@@ -9,17 +9,18 @@ class RequestService
 {
     /**
      * @param string $url
+     * @param string $date
      * @param int $maxAttempts
      * @param int $retryDelayMilliseconds
      * @return array
      * @throws \Exception
      */
-    public function sendXmlRequest(string $url, int $maxAttempts = 3, int $retryDelayMilliseconds = 1000): array
+    public function sendXmlRequest(string $url, string $date, int $maxAttempts = 3, int $retryDelayMilliseconds = 1000): array
     {
         return retry(
             $maxAttempts,
-            function () use ($url) {
-                return $this->makeXmlRequest($url);
+            function () use ($url, $date) {
+                return $this->makeXmlRequest($url, $date);
             },
             $retryDelayMilliseconds
         );
@@ -27,13 +28,16 @@ class RequestService
 
     /**
      * @param string $url
+     * @param string $date
      * @return array
      * @throws \Exception
      */
-    private function makeXmlRequest(string $url): array
+    private function makeXmlRequest(string $url, string $date): array
     {
         try {
-            $response = Http::get($url);
+            $response = Http::get($url , [
+                'date_req' => $date
+            ]);
 
             if ($response->successful()) {
                 $xmlData = simplexml_load_string($response->body());
@@ -41,7 +45,9 @@ class RequestService
 
                 return json_decode($json, true);
             } else {
-                throw new \Exception('HTTP request was not successful. Status code: ' . $response->status());
+                $errMsg = 'HTTP request was not successful. Status code: ' . $response->status();
+                Log::error($errMsg);
+                throw new \Exception($errMsg);
             }
         } catch (\Exception $exception) {
             Log::error('Error in sendXmlRequest: ' . $exception->getMessage());
